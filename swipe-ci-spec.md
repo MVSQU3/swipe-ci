@@ -206,9 +206,9 @@ stateDiagram-v2
 5. **Client comptoir :** quelles valeurs accepter pour `clientPhone` et `clientEmail` quand le client est un particulier anonyme ?
 6. **Remises :** `discount` est-il un pourcentage ? Les exemples le suggèrent, à vérifier en environnement de test.
 7. **Architecture :** présentée mais pas encore validée explicitement.
-8. **KadevPay :** documentation de l'API (liens de paiement, webhooks, signature), frais, moyens de paiement couverts (Wave, Orange Money, MTN, Moov).
+8. **KadevPay** ([pay.kadev.ci](https://pay.kadev.ci/)) **:** documentation de l'API (liens de paiement, webhooks, signature), frais, moyens de paiement couverts (Wave, Orange Money, MTN, Moov).
 9. **Prix de l'abonnement** et nombre de factures gratuites : à tester avec 20 micro-entreprises, face à l'app gratuite de la DGI.
-10. **OTP SMS :** prestataire (ex. Orange SMS API) et coût.
+10. **OTP SMS :** prestataire retenu : Yellika SMS. Reste à obtenir la documentation d'API et le coût.
 
 #### Critères de succès du MVP
 
@@ -226,8 +226,8 @@ stateDiagram-v2
 - **(H2) Validation DGI par entreprise** (question 1) : l'assistant FNE couvre toute la procédure pour chaque commerçant.
 - **(H3) Client comptoir** (question 5) : si le client est anonyme, on envoie le téléphone du commerçant et une adresse e-mail technique par tenant (`comptoir+<tenant>@swipe.ci`). Cette valeur est paramétrable pour pouvoir changer la règle sans redéployer.
 - **(H4) Remise** (question 6) : on la traite comme un pourcentage (entier de 0 à 100) et on la vérifie en environnement de test avant la production.
-- **(H5) KadevPay** (question 8) : tant que sa documentation n'est pas reçue, on s'appuie sur `PaymentProvider` avec un `FakePaymentProvider`. `KadevPayProvider` est un lot séparé, bloqué par cette documentation.
-- **(H6) OTP SMS** (question 10) : interface `SmsSender`. En dev, les codes sont écrits dans les logs, et l'implémentation Orange SMS API se branche plus tard.
+- **(H5) KadevPay** (question 8, [pay.kadev.ci](https://pay.kadev.ci/)) : tant que sa documentation n'est pas reçue, on s'appuie sur `PaymentProvider` avec un `FakePaymentProvider`. `KadevPayProvider` est un lot séparé, bloqué par cette documentation.
+- **(H6) OTP SMS** (question 10, tranchée) : prestataire **Yellika SMS** ([panel.yellikasms.com](https://panel.yellikasms.com/)), derrière l'interface `SmsSender`. En dev, les codes sont écrits dans les logs, et `YellikaSmsSender` se branche dès que la documentation d'API et un nom d'expéditeur sont obtenus.
 - **(H7) Vérification après timeout** (question 4) : manuelle (écran admin « à vérifier »), sans endpoint GET.
 
 ### Structure du dépôt
@@ -276,5 +276,5 @@ Chaque lot est livrable seul, testé et fusionné avant de passer au suivant.
 
 1. Écrire à `support.fne@dgi.gouv.ci` au sujet des questions 1, 2, 4 et 5, et inscrire COD ENTREPRISE sur l'environnement de test.
 2. Demander à KadevPay sa documentation d'API et ses frais (question 8).
-3. Choisir le prestataire OTP SMS (question 10).
+3. Obtenir de Yellika SMS la documentation d'API, la clé, le nom d'expéditeur (« SwipeCI ») et le tarif par SMS.
 4. Recruter les 20 micro-entreprises pilotes pour tester le prix (question 9).
