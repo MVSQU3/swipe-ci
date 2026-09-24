@@ -1,7 +1,7 @@
 # Swipe CI — Facturation FNE mobile pour micro-entreprises
 
 > Spécification issue du brainstorm du 24/09/2026 (session Cowork), mise à jour avec la procédure d'interfaçage API de la DGI (mai 2025). À affiner dans Claude Code avec `/plan-task` avant d'écrire du code.
-> Porteur : COD ENTREPRISE SARL (Abidjan). Stack : NestJS, Angular, PostgreSQL.
+> Porteur : INFORMAland (Abidjan). Stack : NestJS, Angular, PostgreSQL.
 
 ## Initial User Prompt
 
@@ -206,9 +206,9 @@ stateDiagram-v2
 5. **Client comptoir :** quelles valeurs accepter pour `clientPhone` et `clientEmail` quand le client est un particulier anonyme ?
 6. **Remises :** `discount` est-il un pourcentage ? Les exemples le suggèrent, à vérifier en environnement de test.
 7. **Architecture :** présentée mais pas encore validée explicitement.
-8. **KadevPay :** documentation de l'API (liens de paiement, webhooks, signature), frais, moyens de paiement couverts (Wave, Orange Money, MTN, Moov).
+8. **KadevPay** ([pay.kadev.ci](https://pay.kadev.ci/)) **:** documentation de l'API (liens de paiement, webhooks, signature), frais, moyens de paiement couverts (Wave, Orange Money, MTN, Moov).
 9. **Prix de l'abonnement** et nombre de factures gratuites : à tester avec 20 micro-entreprises, face à l'app gratuite de la DGI.
-10. **OTP SMS :** prestataire (ex. Orange SMS API) et coût.
+10. **OTP SMS :** prestataire et coût, à choisir plus tard (hors priorité actuelle).
 
 #### Critères de succès du MVP
 
@@ -218,4 +218,62 @@ stateDiagram-v2
 
 ## Description
 
-_À remplir à l'étape `/plan-task`._
+> Plan d'implémentation rédigé le 24/09/2026. Les hypothèses marquées **(H)** remplacent provisoirement les questions ouvertes et sont à confirmer.
+
+### Hypothèses de travail
+
+- **(H1) Architecture validée** (question 7) : monorepo pnpm avec `apps/api` (NestJS), `apps/mobile` (Angular + Capacitor) et `packages/shared` (types DTO, enums FNE). PostgreSQL 16, Redis 7, stockage compatible S3 (MinIO en local). ORM : Prisma, avec des migrations SQL brutes pour la RLS.
+- **(H2) Validation DGI par entreprise** (question 1) : l'assistant FNE couvre toute la procédure pour chaque commerçant.
+- **(H3) Client comptoir** (question 5) : si le client est anonyme, on envoie le téléphone du commerçant et une adresse e-mail technique par tenant (`comptoir+<tenant>@swipe.ci`). Cette valeur est paramétrable pour pouvoir changer la règle sans redéployer.
+- **(H4) Remise** (question 6) : on la traite comme un pourcentage (entier de 0 à 100) et on la vérifie en environnement de test avant la production.
+- **(H5) KadevPay** (question 8, [pay.kadev.ci](https://pay.kadev.ci/)) : tant que sa documentation n'est pas reçue, on s'appuie sur `PaymentProvider` avec un `FakePaymentProvider`. `KadevPayProvider` est un lot séparé, bloqué par cette documentation.
+- **(H6) OTP SMS** (question 10) : interface `SmsSender`. En dev, les codes sont écrits dans les logs. Le choix du prestataire est reporté.
+- **(H7) Vérification après timeout** (question 4) : manuelle (écran admin « à vérifier »), sans endpoint GET.
+
+### Structure du dépôt
+
+```
+apps/api/        NestJS (modules de la spec)
+apps/mobile/     Angular + Ionic + Capacitor (Android)
+packages/shared/ types, enums FNE, schémas de validation (zod)
+tools/fne-mock/  faux serveur FNE (tests de contrat)
+docker-compose.yml  postgres, redis, minio, fne-mock
+```
+
+### Lots (dans l'ordre)
+
+Chaque lot est livrable seul, testé et fusionné avant de passer au suivant.
+
+| # | Lot | Contenu | Dépend de | Terminé quand |
+| --- | --- | --- | --- | --- |
+| 0 | Socle | Monorepo pnpm, lint et format, CI GitHub Actions (lint, tests, build), docker-compose, config typée, logs structurés | aucun | la CI est verte et `docker compose up` démarre tout |
+| 1 | Données et multi-tenant | Schéma Prisma de toutes les tables, montants en entiers, politiques RLS par `tenant_id` (`SET app.tenant_id` par requête), `audit_logs` | 0 | les tests RLS montrent qu'un tenant ne lit jamais les données d'un autre |
+| 2 | Auth | OTP SMS (`SmsSender`), JWT court + refresh token rotatif, garde de tenant, limitation de débit sur l'OTP | 1 | e2e : login, refresh, révocation |
+| 3 | Tenants et paramètres | Profil fiscal (NCC, régime, taxe par défaut `TVAD` pour RME, point de vente, établissement, logo), clé API FNE chiffrée (AES-256-GCM, clé hors base), environnement test/prod | 2 | la clé n'est jamais renvoyée (test d'intégration) |
+| 4 | Catalogue et clients | CRUD produits (taxe FNE, unité, référence) et clients (type B2C/B2B/B2G, NCC obligatoire en B2B) | 3 | tests unitaires et e2e |
+| 5 | Passerelle FNE | `tools/fne-mock` (200, 201, 400, 401, 500, timeout), `FneGateway.signSale()` / `refund()`, mapping pur facture → JSON FNE, classement des erreurs (échec certain avant envoi / 400 / 401 / 500 / timeout ambigu) | 1, 3 | tests de contrat verts contre le mock, et un appel manuel réussi sur `http://54.247.95.108/ws` |
+| 6 | Factures et certification | Machine d'états (fonction pure et table de transitions), calcul des totaux avant certification, quota, job BullMQ `fne.certify` (réessais uniquement pour un échec certain ou un 500, sinon `a_verifier`), enregistrement de `fne_certifications` et `fne_invoice_items`, alerte stickers, blocage du tenant sur 401, audit | 4, 5 | aucune double certification simulée (tests timeout + réessai) et 100 % des transitions testées |
+| 7 | Avoirs | Choix des articles et quantités, `refund` avec les `id` FNE, états `avoir_partiel` et `annulee`, contrôle des quantités restantes | 6 | tests des cas partiel, total et dépassement |
+| 8 | PDF et partage | Job `pdf.generate` (QR depuis `token`, numéro fiscal, visuel FNE), stockage S3, URL signée, lien public de consultation | 6 | PDF de référence validé à l'œil, puis tests de snapshot |
+| 9 | App mobile, parcours cœur | Login OTP, assistant FNE, paramètres, catalogue, clients, nouvelle facture (3 taps), liste et détail, polling du statut, partage WhatsApp (Capacitor Share), cache en lecture (catalogue et 50 dernières factures) | 2 à 8 | le parcours prend moins de 2 minutes sur un émulateur |
+| 10 | Paiements | `PaymentProvider`, lien de paiement, webhook idempotent (signature, table des événements traités), « payée en espèces », réconciliation quotidienne | 6, puis H5 pour KadevPay | tests des webhooks (signature valide ou invalide, doublons) |
+| 11 | Relances et tableau de bord | Relances (lien WhatsApp pré-rempli), CA du mois, impayés, stickers restants | 9, 10 | e2e |
+| 12 | Abonnement | Plans, `usage_counters` (10 factures gratuites par mois, valeur paramétrable), paiement de l'abonnement, webhook d'activation, blocage limité à la certification | 10 | tests des quotas |
+| 13 | Admin et exploitation | Écran admin des factures `a_verifier` (confirmer certifiée ou non certifiée), traduction des erreurs FNE, supervision des jobs (Bull Board), sauvegardes | 6 | revue de la procédure d'exploitation |
+| 14 | Mise en production | E2E Android complet, export des spécimens pour la DGI, build Play Store (signature, fiche), environnement de prod | tous | premier commerçant pilote en prod |
+
+**Chemin critique :** 0 → 1 → 3 → 5 → 6 → 9. La passerelle FNE (lot 5) est le lot le plus risqué, on la commence donc tôt, dès que les lots 1 et 3 sont prêts.
+
+### Points de conception clés
+
+- **Anti-double certification :** avant chaque appel, on insère une ligne `fne_certifications` à l'état `pending` (clé unique `invoice_id`, verrou en base). Le worker ne renvoie jamais la requête si cette ligne est dans un état ambigu. Seul un admin (ou le commerçant) peut la débloquer, et l'action est auditée.
+- **Classement des erreurs réseau :** `ECONNREFUSED`, `ENOTFOUND` et une erreur TLS avant envoi comptent comme des échecs certains. Un timeout de lecture ou un socket fermé après écriture sont ambigus.
+- **Montants :** entiers en FCFA partout. Après certification, l'affichage utilise les montants renvoyés par la FNE.
+- **Immutabilité :** une facture certifiée est en lecture seule, garanti par un trigger SQL qui refuse toute modification des colonnes fiscales.
+- **Secrets :** la clé de chiffrement est dans une variable d'environnement ou un gestionnaire de secrets. On prévoit sa rotation avec un champ `key_version`.
+
+### Actions externes à lancer tout de suite (en parallèle du code)
+
+1. **Fait le 24/09/2026 :** mail envoyé à `support.fne@dgi.gouv.ci` depuis informaland.26@gmail.com (texte dans `docs/mail-dgi-fne.md`). En attente de la réponse, notamment pour l'inscription d'INFORMAland sur l'environnement de test.
+2. Demander à KadevPay sa documentation d'API et ses frais (question 8).
+3. Recruter les 20 micro-entreprises pilotes pour tester le prix (question 9).
