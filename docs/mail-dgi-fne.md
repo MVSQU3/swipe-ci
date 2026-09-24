@@ -24,6 +24,6 @@ Nous vous remercions par avance pour votre retour et restons à votre dispositio
 
 Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.
 
-[Nom, fonction]
-INFORMAland — [NCC]
-[Téléphone] — [E-mail]
+Kouadio Bonin, CEO
+INFORMAland
+Tél. : 05 02 83 61 19 — informaland.26@gmail.com
