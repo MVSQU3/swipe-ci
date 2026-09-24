@@ -1,7 +1,7 @@
 # Swipe CI — Facturation FNE mobile pour micro-entreprises
 
 > Spécification issue du brainstorm du 24/09/2026 (session Cowork), mise à jour avec la procédure d'interfaçage API de la DGI (mai 2025). À affiner dans Claude Code avec `/plan-task` avant d'écrire du code.
-> Porteur : [à définir]. Stack : NestJS, Angular, PostgreSQL.
+> Porteur : INFORMAland (Abidjan). Stack : NestJS, Angular, PostgreSQL.
 
 ## Initial User Prompt
 
@@ -274,6 +274,6 @@ Chaque lot est livrable seul, testé et fusionné avant de passer au suivant.
 
 ### Actions externes à lancer tout de suite (en parallèle du code)
 
-1. Écrire à `support.fne@dgi.gouv.ci` au sujet des questions 1, 2, 4 et 5, et inscrire l'entreprise porteuse sur l'environnement de test.
+1. Écrire à `support.fne@dgi.gouv.ci` au sujet des questions 1, 2, 4 et 5, et inscrire INFORMAland sur l'environnement de test.
 2. Demander à KadevPay sa documentation d'API et ses frais (question 8).
 3. Recruter les 20 micro-entreprises pilotes pour tester le prix (question 9).
