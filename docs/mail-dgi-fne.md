@@ -1,13 +1,13 @@
 # Brouillon — mail à support.fne@dgi.gouv.ci
 
 **À :** support.fne@dgi.gouv.ci
-**Objet :** Interfaçage API FNE — éditeur de logiciel de facturation pour micro-entreprises (COD ENTREPRISE SARL)
+**Objet :** Interfaçage API FNE — éditeur de logiciel de facturation pour micro-entreprises
 
 ---
 
 Madame, Monsieur,
 
-COD ENTREPRISE SARL, société basée à Abidjan, développe **Swipe CI**, une application mobile de facturation destinée aux micro-entreprises (régime RMI). L'application émettra des factures normalisées électroniques (FNE) via l'API décrite dans votre procédure d'interfaçage de mai 2025.
+[Raison sociale], société basée à Abidjan, développe **Swipe CI**, une application mobile de facturation destinée aux micro-entreprises (régime RMI). L'application émettra des factures normalisées électroniques (FNE) via l'API décrite dans votre procédure d'interfaçage de mai 2025.
 
 Avant de finaliser notre développement, nous souhaiterions obtenir vos précisions sur les points suivants :
 
@@ -18,12 +18,12 @@ Avant de finaliser notre développement, nous souhaiterions obtenir vos précisi
 5. **Remise** : le champ `discount` (facture et article) est-il exprimé en pourcentage ou en montant ?
 6. **Stickers** : comment les stickers sont-ils obtenus et rechargés par l'entreprise, et à quel coût ?
 
-Par ailleurs, nous souhaitons **inscrire COD ENTREPRISE SARL sur l'environnement de test** afin de démarrer les essais de facture de vente et d'avoir. Pourriez-vous nous indiquer la marche à suivre ?
+Par ailleurs, nous souhaitons **inscrire [raison sociale] sur l'environnement de test** afin de démarrer les essais de facture de vente et d'avoir. Pourriez-vous nous indiquer la marche à suivre ?
 
 Nous vous remercions par avance pour votre retour et restons à votre disposition pour toute information complémentaire.
 
 Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.
 
 [Nom, fonction]
-COD ENTREPRISE SARL — [NCC]
+[Raison sociale] — [NCC]
 [Téléphone] — [E-mail]
